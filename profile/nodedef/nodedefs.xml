@@ -1,0 +1,41 @@
+<!-- Version 0.0.1 -->
+<nodeDefs>
+
+  <!-- Node server node - KEEP THIS. This will create a nodeserver node showing if the node server is active or not -->
+  <nodedef id="CONTROLLER" nls="CONTROLLER">
+    <sts>
+      <st id="ST" editor="CONTROLLER"/>
+    </sts>
+    <cmds>
+      <sends/>
+      <accepts>
+        <cmd id="DISCOVER"/>
+        <cmd id="CREATE_NEW"/>
+        <cmd id="UPDATE_PROFILE"/>
+        <cmd id="REMOVE_NOTICES"/>
+        <cmd id="QUERY"/>
+      </accepts>
+    </cmds>
+  </nodedef>
+
+  <!-- Virtual node - dimmer -->
+  <nodedef id="VNODE_DIMMER" nls="VN">
+    <sts>
+      <st id="ST" editor="PERCENT"/>
+    </sts>
+    <cmds>
+      <sends>
+        <cmd id="DON"/>
+        <cmd id="DOF"/>
+      </sends>
+      <accepts>
+        <cmd id="DON">
+          <p id="" editor="PERCENT" optional="T"/>
+        </cmd>
+        <cmd id="DOF"/>
+        <cmd id="QUERY"/>
+      </accepts>
+    </cmds>
+  </nodedef>
+
+</nodeDefs>

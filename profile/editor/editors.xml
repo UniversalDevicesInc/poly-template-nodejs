@@ -1,0 +1,10 @@
+<!-- Version 0.0.1 -->
+<editors>
+
+  <editor id="PERCENT">
+    <!-- 51 is percentage -->
+    <range uom="51" subset="0-100" />
+  </editor>
+
+
+</editors>
