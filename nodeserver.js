@@ -11,7 +11,7 @@ const MyNode = require('./Nodes/MyNode.js'); // This is an example node
 
 // Utility function provided to facilitate logging.
 // Use logger.<debug|info|warn|error>()
-// Logs to <home>/.polyglot/nodeservers/<your node server>/logs/debug.log
+// Logs to <home>/.polyglot/nodeservers/<your node server>/logs/<date>.log
 // To watch logs: tail -f ~/.polyglot/nodeservers/<NodeServer>/logs/<date>.log
 // All log entries prefixed with NS: Comes from your NodeServer.
 // All log entries prefixed with POLY: Comes from the Polyglot interface
@@ -52,7 +52,7 @@ logger.info('Starting Node Server');
 const poly = new Polyglot.Interface([ControllerNode, MyNode]);
 
 // Connected to MQTT, but config has not yet arrived.
-poly.on('mqttStarted', function() {
+poly.on('mqttConnected', function() {
   logger.info('MQTT Connection started');
 });
 

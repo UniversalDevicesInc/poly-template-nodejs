@@ -7,7 +7,7 @@
 // ISY programs.
 
 // This is the Polyglot module that a node.js NodeServer needs
-const PolyglotInterface = require('polyinterface');
+const Polyglot = require('polyinterface');
 
 // Utility function provided to facilitate logging.
 const logger = PolyglotInterface.logger;
@@ -20,7 +20,7 @@ const MyNode = require('./MyNode.js');
 const nodeDefId = 'CONTROLLER';
 
 
-module.exports = class Controller extends PolyglotInterface.Node {
+module.exports = class Controller extends Polyglot.Node {
   // polyInterface: handle to the interface
   // address: Your node address, withouth the leading 'n999_'
   // primary: Same as address, if the node is a primary node

@@ -4,7 +4,7 @@
 // You need one per nodedefs.
 
 // This is the Polyglot module that a node.js NodeServer needs
-const PolyglotInterface = require('polyinterface');
+const Polyglot = require('polyinterface');
 
 // Utility function provided to facilitate logging.
 const logger = PolyglotInterface.logger;
@@ -14,7 +14,7 @@ const nodeDefId = 'VNODE_DIMMER';
 
 // This is your custom Node class, which has to be a inherited from
 // PolyglotInterface.Node
-module.exports = class MyNode extends PolyglotInterface.Node {
+module.exports = class MyNode extends Polyglot.Node {
   // polyInterface: handle to the interface
   // address: Your node address, withouth the leading 'n999_'
   // primary: Same as address, if the node is a primary node
@@ -64,7 +64,7 @@ module.exports.nodeDefId = nodeDefId;
 // this.name            - Node name
 // this.timeAdded       - Time added (Date() object)
 // this.enabled         - Node is enabled?
-// this.added           - Node is added to ISY?
+// this.added           - Node is addeto ISY?
 // this.commands        - List of allowed commands
 //                        (You need to define them in your custom node)
 // this.drivers         - List of drivers
