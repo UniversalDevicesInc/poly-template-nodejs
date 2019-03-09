@@ -1,15 +1,24 @@
 'use strict';
 
+trapUncaughExceptions();
+
 const fs = require('fs');
-const markdown = require('markdown').markdown;
+const markdown = require('markdown').markdown; // For Polyglot-V2 only
+const AsyncLock = require('async-lock');
+
+// The polyinterface module loads either the Polygot V2 interface, or the
+// PGC interface if it detect that it is used in the cloud.
 const Polyglot = require('polyinterface');
+
+// If your nodeserver only supports the cloud, use pgc_interface instead.
+// If so, make sure to also change it in MyNode.js and ControllerNode.js
+// const Polyglot = require('pgc_interface');
 
 // Those are the node definitions that our nodeserver uses.
 // You will need to edit those files.
 const ControllerNode = require('./Nodes/ControllerNode.js'); // Controller node
 const MyNode = require('./Nodes/MyNode.js'); // This is an example node
 
-// Utility function provided to facilitate logging.
 // Use logger.<debug|info|warn|error>()
 // Logs to <home>/.polyglot/nodeservers/<your node server>/logs/<date>.log
 // To watch logs: tail -f ~/.polyglot/nodeservers/<NodeServer>/logs/<date>.log
@@ -17,7 +26,19 @@ const MyNode = require('./Nodes/MyNode.js'); // This is an example node
 // All log entries prefixed with POLY: Comes from the Polyglot interface
 const logger = Polyglot.logger;
 
+const lock = new AsyncLock({ timeout: 500 });
+
+// UI Parameters: customParams feature can be used with PGC or Polyglot V2
+const customParams = {
+  user: 'default user',
+  password: 'default password',
+  host: 'host or IP',
+  port: 'port',
+};
+
+// UI Parameters: typedParams - Feature available in Polyglot-V2 only:
 // Custom parameters definitions in front end UI configuration screen
+// You can use this instead of customParams to handle typed nodeserver params
 // Accepts list of objects with the following properties:
 // name - used as a key when data is sent from UI
 // title - displayed in UI
@@ -33,22 +54,19 @@ const logger = Polyglot.logger;
 // 	 single / list of single values
 
 const typedParams = [
-  {name: 'host', title: 'Host', isRequired: true},
-  {name: 'port', title: 'Port', isRequired: true, type: 'NUMBER'},
-  {name: 'user', title: 'User', isRequired: true},
-  {name: 'password', title: 'Password', isRequired: true},
-  // { name: 'list', title: 'List of values', isList:true }
+  { name: 'host', title: 'Host', isRequired: true},
+  { name: 'port', title: 'Port', isRequired: true, type: 'NUMBER'},
+  { name: 'user', title: 'User', isRequired: true},
+  { name: 'password', title: 'Password', isRequired: true},
+  { name: 'list', title: 'List of values', isList: true },
 ];
-
-// Help file shown in the UI
-const configurationHelp = './configdoc.md';
 
 
 logger.info('-------------------------------------------------------');
 logger.info('Starting Node Server');
 
-// Create an instance of the Polyglot interface. We need pass in parameter all
-// the Node classes that we will be using.
+// Create an instance of the Polyglot interface. We need pass all the node
+// classes that we will be using.
 const poly = new Polyglot.Interface([ControllerNode, MyNode]);
 
 // Connected to MQTT, but config has not yet arrived.
@@ -59,7 +77,6 @@ poly.on('mqttConnected', function() {
 // Config has been received
 poly.on('config', function(config) {
   const nodesCount = Object.keys(config.nodes).length;
-
   logger.info('Config received has %d nodes', nodesCount);
 
   // If we want to see the config content (Without the long nodes array):
@@ -68,42 +85,81 @@ poly.on('config', function(config) {
 
   // Important config options:
   // config.nodes: Our nodes, with the node class applied
-  // config.typedCustomData: Configuration parameters from the UI
+  // config.customParams: Configuration parameters from the UI
+  // config.typedCustomData: Configuration parameters from the UI (if typed)
 
   // If this is the first config after a node server restart
   if (config.isInitialConfig) {
-
-    // Removes all existing notices on startup, if any.
+    // Removes all existing notices on startup.
     poly.removeNoticesAll();
 
-    // Sets the configuration fields in the UI
-    poly.saveTypedParams(typedParams);
+    // Uses options specific to Polyglot-V2 - not yet available in PGC
+    if (!poly.isCloud) {
+      logger.info('Running nodeserver on-premises');
 
-    // Sets the configuration doc shown in the UI
-    const md = fs.readFileSync(configurationHelp);
-    poly.setCustomParamsDoc(markdown.toHTML(md.toString()));
+      // Sets the configuration fields in the UI
+      // Available in Polyglot V2 only
+      poly.saveTypedParams(typedParams);
+
+      // Sets the configuration doc shown in the UI
+      // Available in Polyglot V2 only
+      const md = fs.readFileSync('./configdoc.md');
+      poly.setCustomParamsDoc(markdown.toHTML(md.toString()));
+    } else {
+      // Sets the configuration fields in the UI (Not typedParams)
+      poly.saveCustomParams(customParams);
+      logger.info('Running nodeserver in the cloud');
+    }
 
     // If we have no nodes yet, we add the first node: a controller node which
     // holds the node server status and control buttons The first device to
-    // create is always the nodeserver controller.
+    // create should always be the nodeserver controller.
     if (!nodesCount) {
       try {
-        autoCreateController();
+        logger.info('Auto-creating controller');
+        callAsync(autoCreateController());
       } catch (err) {
-        logger.error('Error while auto-creating controller node');
+        logger.error('Error while auto-creating controller node:', err);
       }
+    } else {
+      // Test code to remove the first node found
+
+      // try {
+      //   logger.info('Auto-deleting controller');
+      //  callAsync(autoDeleteNode(config.nodes[Object.keys(config.nodes)[0]]));
+      // } catch (err) {
+      //   logger.error('Error while auto-deleting controller node');
+      // }
     }
   }
 });
 
+// User just went through oAuth authorization. Available with PGC only.
+poly.on('oauth', function(oAuth) {
+  logger.info('Received OAuth code');
+  // oAuth object should contain:
+  // {
+  //   code: "<the authorization code to use to get tokens>"
+  //   state: "<the state worker you appended to the url>"
+  // }
+  // Use it to get access and refresh tokens
+});
+
 // This is triggered every x seconds. Frequency is configured in the UI.
 poly.on('poll', function(longPoll) {
-  logger.info('%s', longPoll ? 'Long poll' : 'Short poll');
+  callAsync(doPoll(longPoll));
 });
 
 // Received a 'stop' message from Polyglot. This NodeServer is shutting down
-poly.on('stop', function() {
+poly.on('stop', async function() {
   logger.info('Graceful stop');
+
+  // Make a last short poll and long poll
+  await doPoll(false);
+  await doPoll(true);
+
+  // Tell Interface we are stopping (Our polling is now finished)
+  poly.stop();
 });
 
 // Received a 'delete' message from Polyglot. This NodeServer is being removed
@@ -119,21 +175,35 @@ poly.on('mqttEnd', function() {
 // Triggered for every message received from polyglot.
 // Can be used for troubleshooting.
 poly.on('message', function(message) {
-  // logger.debug('Message: %o', message);
+  // Only display messages other than config
+  if (!message['config']) {
+    logger.debug('Message: %o', message);
+  }
 });
 
+// This is being triggered based on the short and long poll parameters in the UI
+async function doPoll(longPoll) {
+  // Prevents polling logic reentry if an existing poll is underway
+  try {
+    await lock.acquire('poll', function() {
+      logger.info('%s', longPoll ? 'Long poll' : 'Short poll');
+    });
+  } catch (err) {
+    logger.error('Error while polling: %s', err.message);
+  }
+}
 
-// If we get an uncaugthException...
-process.on('uncaughtException', function(err) {
-  console.error(`uncaughtException REPORT THIS!: ${err.stack}`);
-});
-
-
+// Creates the controller node
 async function autoCreateController() {
-  await poly.addNode(
-    new ControllerNode(poly, 'controller', 'controller', 'NodeServer'));
+  try {
+    await poly.addNode(
+      new ControllerNode(poly, 'controller', 'controller', 'NodeServer')
+    );
+  } catch (err) {
+    logger.error('Error creating controller node');
+  }
 
-  // Add a notice in the UI, remove it after 5 seconds;
+  // Add a notice in the UI
   poly.addNotice('newController', 'Controller node initialized');
 
   // Waits 5 seconds, then delete the notice
@@ -142,6 +212,41 @@ async function autoCreateController() {
   }, 5000);
 }
 
+// Used for testing only
+// async function autoDeleteNode(node) {
+//   try {
+//     await poly.delNode(node);
+//   } catch (err) {
+//     logger.error('Error deleting controller node', err);
+//   }
+//
+//   // Add a notice in the UI, remove it after 5 seconds;
+//   poly.addNotice('delController', 'node removed');
+//
+//   // Waits 5 seconds, then delete the notice
+//   setTimeout(function() {
+//     poly.removeNotice('delController');
+//   }, 5000);
+// }
+
+// Call Async function from a non-asynch function without waiting for result,
+// and log the error if it fails
+function callAsync(promise) {
+  (async function() {
+    try {
+      await promise;
+    } catch (err) {
+      logger.error('Error with async function: %s %s', err.message, err.stack);
+    }
+  })();
+}
+
+function trapUncaughExceptions() {
+  // If we get an uncaugthException...
+  process.on('uncaughtException', function(err) {
+    logger.error(`uncaughtException REPORT THIS!: ${err.stack}`);
+  });
+}
 
 // Starts the NodeServer!
 poly.start();

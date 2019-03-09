@@ -7,7 +7,7 @@
 const Polyglot = require('polyinterface');
 
 // Utility function provided to facilitate logging.
-const logger = PolyglotInterface.logger;
+const logger = Polyglot.logger;
 
 // nodeDefId must match the nodedef id in your nodedef
 const nodeDefId = 'VNODE_DIMMER';
@@ -21,6 +21,12 @@ module.exports = class MyNode extends Polyglot.Node {
   // name: Your node name
   constructor(polyInterface, primary, address, name) {
     super(nodeDefId, polyInterface, primary, address, name);
+
+    // PGC supports setting the node hint when creating a node
+    // REF: https://github.com/UniversalDevicesInc/hints
+    // Must be a string in this format
+    // If you don't care about the hint, just comment the line.
+    this.hint = '0x01020900'; // Example for a Dimmer switch
 
     // Commands that this node can handle.
     // Should match the 'accepts' section of the nodedef.
@@ -42,14 +48,13 @@ module.exports = class MyNode extends Polyglot.Node {
       this.address,
       message.value ? message.value : 'No value');
 
-    // setDrivers accepts string or number (message.value is a string
-    this.setDriver('ST', message.value ? message.value : 100);
+    // setDrivers accepts string or number (message.value is a string)
+    this.setDriver('ST', message.value ? message.value : '100');
   }
 
   onDOF() {
     logger.info('DOF (%s)', this.address);
-
-    this.setDriver('ST', 0);
+    this.setDriver('ST', '0');
   }
 };
 

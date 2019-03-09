@@ -10,7 +10,7 @@
 const Polyglot = require('polyinterface');
 
 // Utility function provided to facilitate logging.
-const logger = PolyglotInterface.logger;
+const logger = Polyglot.logger;
 
 // In this example, we also need to have our custom node because we create
 // nodes from this controller. See onCreateNew
@@ -43,6 +43,8 @@ module.exports = class Controller extends Polyglot.Node {
     this.drivers = {
       ST: { value: 0, uom: 2 }, // uom 2 = Boolean.
     };
+
+    this.isController = true;
   }
 
   // Creates a new node using MyNode class, using a sequence number.
