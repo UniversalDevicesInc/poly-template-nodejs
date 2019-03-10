@@ -165,6 +165,9 @@ poly.on('stop', async function() {
 // Received a 'delete' message from Polyglot. This NodeServer is being removed
 poly.on('delete', function() {
   logger.info('Nodeserver is being deleted');
+
+  // We can do some cleanup, then stop.
+  poly.stop();
 });
 
 // MQTT connection ended

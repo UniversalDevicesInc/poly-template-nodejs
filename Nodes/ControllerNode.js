@@ -41,7 +41,7 @@ module.exports = class Controller extends Polyglot.Node {
     // Status that this controller node has.
     // Should match the 'sts' section of the nodedef.
     this.drivers = {
-      ST: { value: 0, uom: 2 }, // uom 2 = Boolean.
+      ST: { value: '1', uom: 2 }, // uom 2 = Boolean. '1' is True.
     };
 
     this.isController = true;
