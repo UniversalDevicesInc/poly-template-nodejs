@@ -33,13 +33,14 @@ module.exports = class MyNode extends Polyglot.Node {
     this.commands = {
       DON: this.onDON,
       DOF: this.onDOF,
-      QUERY: this.onQuery,
+      // You can use the query function from the base class directly
+      QUERY: this.query,
     };
 
     // Status that this node has.
     // Should match the 'sts' section of the nodedef.
     this.drivers = {
-      ST: {value: 0, uom: 51},
+      ST: {value: '0', uom: 51},
     };
   }
 
