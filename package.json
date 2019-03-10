@@ -3,10 +3,12 @@
   "description": "Polyglot NodeServer template for node.js",
   "version": "1.1.0",
   "author": "Benoit Mercier",
+  "license": "MIT",
   "main": "nodeserver.js",
   "scripts": {
     "linter": "eslint --ignore-path .gitignore ."
   },
+  "repository": "UniversalDevicesInc/poly-template-nodejs",
   "dependencies": {
     "async-lock": "^1.1.4",
     "markdown": "^0.5.0",
