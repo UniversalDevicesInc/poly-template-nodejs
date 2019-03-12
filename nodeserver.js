@@ -93,8 +93,20 @@ poly.on('config', function(config) {
     // Removes all existing notices on startup.
     poly.removeNoticesAll();
 
-    // Uses options specific to Polyglot-V2 - not yet available in PGC
-    if (!poly.isCloud) {
+    // Use options specific to PGC vs Polyglot-V2
+    if (poly.isCloud) {
+      logger.info('Running nodeserver in the cloud');
+      // Sets the configuration fields in the UI (Not typedParams)
+      poly.saveCustomParams(customParams);
+
+      // When a Nodeserver is started for the first time, we need to send the
+      // profiles.
+      // Note: In Polyglot-V2, this is not required; Polyglot-V2 handles it.
+      if (!nodesCount) {
+        logger.info('Sending profile files to ISY.');
+        poly.updateProfile();
+      }
+    } else {
       logger.info('Running nodeserver on-premises');
 
       // Sets the configuration fields in the UI
@@ -105,10 +117,6 @@ poly.on('config', function(config) {
       // Available in Polyglot V2 only
       const md = fs.readFileSync('./configdoc.md');
       poly.setCustomParamsDoc(markdown.toHTML(md.toString()));
-    } else {
-      // Sets the configuration fields in the UI (Not typedParams)
-      poly.saveCustomParams(customParams);
-      logger.info('Running nodeserver in the cloud');
     }
 
     // If we have no nodes yet, we add the first node: a controller node which
