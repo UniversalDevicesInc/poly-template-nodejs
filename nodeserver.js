@@ -99,10 +99,9 @@ poly.on('config', function(config) {
       // Sets the configuration fields in the UI (Not typedParams)
       poly.saveCustomParams(customParams);
 
-      // When a Nodeserver is started for the first time, we need to send the
-      // profiles.
-      // Note: In Polyglot-V2, this is not required; Polyglot-V2 handles it.
+      // When Nodeserver starts the first time, we need to send the profile.
       if (!nodesCount) {
+        // Only required if using PGC
         logger.info('Sending profile files to ISY.');
         poly.updateProfile();
       }
