@@ -3,64 +3,66 @@
 // This is an example NodeServer Node definition.
 // You need one per nodedefs.
 
-// This is the Polyglot module that a node.js NodeServer needs
-const Polyglot = require('polyinterface');
-
-// Utility function provided to facilitate logging.
-const logger = Polyglot.logger;
-
 // nodeDefId must match the nodedef id in your nodedef
 const nodeDefId = 'VNODE_DIMMER';
 
-// This is your custom Node class, which has to be a inherited from
-// PolyglotInterface.Node
-module.exports = class MyNode extends Polyglot.Node {
-  // polyInterface: handle to the interface
-  // address: Your node address, withouth the leading 'n999_'
-  // primary: Same as address, if the node is a primary node
-  // name: Your node name
-  constructor(polyInterface, primary, address, name) {
-    super(nodeDefId, polyInterface, primary, address, name);
+module.exports = function(Polyglot) {
+// Utility function provided to facilitate logging.
+  const logger = Polyglot.logger;
 
-    // PGC supports setting the node hint when creating a node
-    // REF: https://github.com/UniversalDevicesInc/hints
-    // Must be a string in this format
-    // If you don't care about the hint, just comment the line.
-    this.hint = '0x01020900'; // Example for a Dimmer switch
+  // This is your custom Node class
+  class MyNode extends Polyglot.Node {
 
-    // Commands that this node can handle.
-    // Should match the 'accepts' section of the nodedef.
-    this.commands = {
-      DON: this.onDON,
-      DOF: this.onDOF,
-      // You can use the query function from the base class directly
-      QUERY: this.query,
-    };
+    // polyInterface: handle to the interface
+    // address: Your node address, withouth the leading 'n999_'
+    // primary: Same as address, if the node is a primary node
+    // name: Your node name
+    constructor(polyInterface, primary, address, name) {
+      super(nodeDefId, polyInterface, primary, address, name);
 
-    // Status that this node has.
-    // Should match the 'sts' section of the nodedef.
-    this.drivers = {
-      ST: {value: '0', uom: 51},
-    };
-  }
+      // PGC supports setting the node hint when creating a node
+      // REF: https://github.com/UniversalDevicesInc/hints
+      // Must be a string in this format
+      // If you don't care about the hint, just comment the line.
+      this.hint = '0x01020900'; // Example for a Dimmer switch
 
-  onDON(message) {
-    logger.info('DON (%s): %s',
-      this.address,
-      message.value ? message.value : 'No value');
+      // Commands that this node can handle.
+      // Should match the 'accepts' section of the nodedef.
+      this.commands = {
+        DON: this.onDON,
+        DOF: this.onDOF,
+        // You can use the query function from the base class directly
+        QUERY: this.query,
+      };
 
-    // setDrivers accepts string or number (message.value is a string)
-    this.setDriver('ST', message.value ? message.value : '100');
-  }
+      // Status that this node has.
+      // Should match the 'sts' section of the nodedef.
+      this.drivers = {
+        ST: {value: '0', uom: 51},
+      };
+    }
 
-  onDOF() {
-    logger.info('DOF (%s)', this.address);
-    this.setDriver('ST', '0');
-  }
+    onDON(message) {
+      logger.info('DON (%s): %s',
+        this.address,
+        message.value ? message.value : 'No value');
+
+      // setDrivers accepts string or number (message.value is a string)
+      this.setDriver('ST', message.value ? message.value : '100');
+    }
+
+    onDOF() {
+      logger.info('DOF (%s)', this.address);
+      this.setDriver('ST', '0');
+    }
+  };
+
+  // Required so that the interface can find this Node class using the nodeDefId
+  MyNode.nodeDefId = nodeDefId;
+
+  return MyNode;
 };
 
-// Required, so that the interface can find this Node class using the nodeDefId
-module.exports.nodeDefId = nodeDefId;
 
 // Those are the standard properties of every nodes:
 // this.id              - Nodedef ID

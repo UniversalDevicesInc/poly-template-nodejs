@@ -6,9 +6,10 @@ const fs = require('fs');
 const markdown = require('markdown').markdown; // For Polyglot-V2 only
 const AsyncLock = require('async-lock');
 
-// The polyinterface module loads either the Polygot V2 interface, or the
-// PGC interface if it detect that it is used in the cloud.
-const Polyglot = require('polyinterface');
+// Loads the appropriate Polyglot interface module.
+const Polyglot = useCloud() ?
+  require('pgc_interface') : // Cloud module
+  require('polyinterface'); // Polyglot V2 module (On-Premise)
 
 // If your nodeserver only supports the cloud, use pgc_interface instead.
 // If so, make sure to also change it in MyNode.js and ControllerNode.js
@@ -16,8 +17,8 @@ const Polyglot = require('polyinterface');
 
 // Those are the node definitions that our nodeserver uses.
 // You will need to edit those files.
-const ControllerNode = require('./Nodes/ControllerNode.js'); // Controller node
-const MyNode = require('./Nodes/MyNode.js'); // This is an example node
+const ControllerNode = require('./Nodes/ControllerNode.js')(Polyglot);
+const MyNode = require('./Nodes/MyNode.js')(Polyglot);
 
 // Use logger.<debug|info|warn|error>()
 // Logs to <home>/.polyglot/nodeservers/<your node server>/logs/<date>.log
@@ -61,8 +62,6 @@ const typedParams = [
   { name: 'list', title: 'List of values', isList: true },
 ];
 
-
-logger.info('-------------------------------------------------------');
 logger.info('Starting Node Server');
 
 // Create an instance of the Polyglot interface. We need pass all the node
@@ -108,9 +107,11 @@ poly.on('config', function(config) {
     } else {
       logger.info('Running nodeserver on-premises');
 
-      // Sets the configuration fields in the UI
-      // Available in Polyglot V2 only
-      poly.saveTypedParams(typedParams);
+      // Sets the configuration fields in the UI (Standard method)
+      poly.saveCustomParams(customParams);
+
+      // Sets the configuration fields in the UI / Available in Polyglot V2 only
+      // poly.saveTypedParams(typedParams);
 
       // Sets the configuration doc shown in the UI
       // Available in Polyglot V2 only
@@ -183,12 +184,16 @@ poly.on('mqttEnd', function() {
 });
 
 // Triggered for every message received from polyglot.
-// Can be used for troubleshooting.
-poly.on('message', function(message) {
+poly.on('messageReceived', function(message) {
   // Only display messages other than config
   if (!message['config']) {
-    logger.debug('Message: %o', message);
+    logger.debug('Message Received: %o', message);
   }
+});
+
+// Triggered for every message sent to polyglot.
+poly.on('messageSent', function(message) {
+  logger.debug('Message Sent: %o', message);
 });
 
 // This is being triggered based on the short and long poll parameters in the UI
@@ -256,6 +261,10 @@ function trapUncaughExceptions() {
   process.on('uncaughtException', function(err) {
     logger.error(`uncaughtException REPORT THIS!: ${err.stack}`);
   });
+}
+
+function useCloud() {
+  return process.env.MQTTENDPOINT && process.env.STAGE;
 }
 
 // Starts the NodeServer!
