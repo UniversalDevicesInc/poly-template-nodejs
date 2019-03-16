@@ -11,14 +11,7 @@ const Polyglot = useCloud() ?
   require('pgc_interface') : // Cloud module
   require('polyinterface'); // Polyglot V2 module (On-Premise)
 
-// If your nodeserver only supports the cloud, use pgc_interface instead.
-// If so, make sure to also change it in MyNode.js and ControllerNode.js
-// const Polyglot = require('pgc_interface');
-
-// Those are the node definitions that our nodeserver uses.
-// You will need to edit those files.
-const ControllerNode = require('./Nodes/ControllerNode.js')(Polyglot);
-const MyNode = require('./Nodes/MyNode.js')(Polyglot);
+// If your nodeserver only supports the cloud, use pgc_interface only.
 
 // Use logger.<debug|info|warn|error>()
 // Logs to <home>/.polyglot/nodeservers/<your node server>/logs/<date>.log
@@ -26,8 +19,12 @@ const MyNode = require('./Nodes/MyNode.js')(Polyglot);
 // All log entries prefixed with NS: Comes from your NodeServer.
 // All log entries prefixed with POLY: Comes from the Polyglot interface
 const logger = Polyglot.logger;
-
 const lock = new AsyncLock({ timeout: 500 });
+
+// Those are the node definitions that our nodeserver uses.
+// You will need to edit those files.
+const ControllerNode = require('./Nodes/ControllerNode.js')(Polyglot);
+const MyNode = require('./Nodes/MyNode.js')(Polyglot);
 
 // UI Parameters: customParams feature can be used with PGC or Polyglot V2
 const customParams = {
