@@ -26,12 +26,18 @@ const lock = new AsyncLock({ timeout: 500 });
 const ControllerNode = require('./Nodes/ControllerNode.js')(Polyglot);
 const MyNode = require('./Nodes/MyNode.js')(Polyglot);
 
-// UI Parameters: customParams feature can be used with PGC or Polyglot V2
-const customParams = {
-  user: 'default user',
-  password: 'default password',
-  host: 'host or IP',
-  port: 'port',
+// Names of our customParams
+const emailParam = 'User';
+const pwParam = 'Password';
+const hostParam = 'Host';
+const portParam = 'Port';
+
+// UI customParams default values. Param must have at least 1 character
+const defaultParams = {
+  [emailParam]: ' ',
+  [pwParam]: ' ',
+  [hostParam]: ' ',
+  [portParam]: ' ',
 };
 
 // UI Parameters: typedParams - Feature available in Polyglot-V2 only:
@@ -51,13 +57,13 @@ const customParams = {
 // 	 list of objects by UI, otherwise, it's treated as a
 // 	 single / list of single values
 
-const typedParams = [
-  { name: 'host', title: 'Host', isRequired: true},
-  { name: 'port', title: 'Port', isRequired: true, type: 'NUMBER'},
-  { name: 'user', title: 'User', isRequired: true},
-  { name: 'password', title: 'Password', isRequired: true},
-  { name: 'list', title: 'List of values', isList: true },
-];
+// const typedParams = [
+//   { name: 'host', title: 'Host', isRequired: true},
+//   { name: 'port', title: 'Port', isRequired: true, type: 'NUMBER'},
+//   { name: 'user', title: 'User', isRequired: true},
+//   { name: 'password', title: 'Password', isRequired: true},
+//   { name: 'list', title: 'List of values', isList: true },
+// ];
 
 logger.info('Starting Node Server');
 
@@ -82,6 +88,7 @@ poly.on('config', function(config) {
   // Important config options:
   // config.nodes: Our nodes, with the node class applied
   // config.customParams: Configuration parameters from the UI
+  // config.newParamsDetected: Flag which tells us that customParams changed
   // config.typedCustomData: Configuration parameters from the UI (if typed)
 
   // If this is the first config after a node server restart
@@ -92,8 +99,6 @@ poly.on('config', function(config) {
     // Use options specific to PGC vs Polyglot-V2
     if (poly.isCloud) {
       logger.info('Running nodeserver in the cloud');
-      // Sets the configuration fields in the UI (Not typedParams)
-      poly.saveCustomParams(customParams);
 
       // When Nodeserver starts the first time, we need to send the profile.
       if (!nodesCount) {
@@ -104,9 +109,6 @@ poly.on('config', function(config) {
     } else {
       logger.info('Running nodeserver on-premises');
 
-      // Sets the configuration fields in the UI (Standard method)
-      poly.saveCustomParams(customParams);
-
       // Sets the configuration fields in the UI / Available in Polyglot V2 only
       // poly.saveTypedParams(typedParams);
 
@@ -115,6 +117,9 @@ poly.on('config', function(config) {
       const md = fs.readFileSync('./configdoc.md');
       poly.setCustomParamsDoc(markdown.toHTML(md.toString()));
     }
+
+    // Sets the configuration fields in the UI
+    initializeCustomParams(config.customParams);
 
     // If we have no nodes yet, we add the first node: a controller node which
     // holds the node server status and control buttons The first device to
@@ -135,6 +140,10 @@ poly.on('config', function(config) {
       // } catch (err) {
       //   logger.error('Error while auto-deleting controller node');
       // }
+    }
+
+    if (config.newParamsDetected) {
+      logger.info('New parameters detected');
     }
   }
 });
@@ -215,13 +224,8 @@ async function autoCreateController() {
     logger.error('Error creating controller node');
   }
 
-  // Add a notice in the UI
-  poly.addNotice('newController', 'Controller node initialized');
-
-  // Waits 5 seconds, then delete the notice
-  setTimeout(function() {
-    poly.removeNotice('newController');
-  }, 5000);
+  // Add a notice in the UI for 5 seconds
+  poly.addNoticeTemp('newController', 'Controller node initialized', 5);
 }
 
 // Used for testing only
@@ -240,6 +244,31 @@ async function autoCreateController() {
 //     poly.removeNotice('delController');
 //   }, 5000);
 // }
+
+// Sets the custom params as we want them. Keeps existing params values.
+function initializeCustomParams(currentParams) {
+  const defaultParamKeys = Object.keys(defaultParams);
+  const currentParamKeys = Object.keys(currentParams);
+
+  // Get orphan keys from either currentParams or defaultParams
+  const differentKeys = defaultParamKeys.concat(currentParamKeys)
+  .filter(function(key) {
+    return !(key in defaultParams) || !(key in currentParams);
+  });
+
+  if (differentKeys.length) {
+    let customParams = {};
+
+    // Only keeps params that exists in defaultParams
+    // Sets the params to the existing value, or default value.
+    defaultParamKeys.forEach(function(key) {
+      customParams[key] = currentParams[key] ?
+        currentParams[key] : defaultParams[key];
+    });
+
+    poly.saveCustomParams(customParams);
+  }
+}
 
 // Call Async function from a non-asynch function without waiting for result,
 // and log the error if it fails
