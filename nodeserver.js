@@ -164,6 +164,14 @@ poly.on('poll', function(longPoll) {
   callAsync(doPoll(longPoll));
 });
 
+poly.on('oauth', function(oaMessage) {
+  // oaMessage.code: Authorization code received after authorization
+  // oaMessage.state: This must be the worker ID.
+
+  logger.info('Received oAuth message %o', oaMessage);
+  // From here, we need to process the authorization token
+});
+
 // Received a 'stop' message from Polyglot. This NodeServer is shutting down
 poly.on('stop', async function() {
   logger.info('Graceful stop');
