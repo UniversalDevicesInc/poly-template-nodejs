@@ -100,14 +100,12 @@ poly.on('config', function(config) {
     if (poly.isCloud) {
       logger.info('Running nodeserver in the cloud');
 
-      // When Nodeserver starts the first time, we need to send the profile.
-      if (!nodesCount) {
-        // Only required if using PGC
-        logger.info('Sending profile files to ISY.');
-        poly.updateProfile();
-      }
+      // Will send the profile if the version is server.json is changed, or
+      // if the profile has never been sent. Exists only for PGC.
+      poly.updateProfileIfNew();
     } else {
       logger.info('Running nodeserver on-premises');
+      // Profile files are sent automatically the first time.
 
       // Sets the configuration fields in the UI / Available in Polyglot V2 only
       // poly.saveTypedParams(typedParams);
