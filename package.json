@@ -1,7 +1,7 @@
 {
   "name": "poly-template-nodejs",
   "description": "Polyglot NodeServer template for node.js",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "author": "Benoit Mercier",
   "license": "MIT",
   "main": "nodeserver.js",
@@ -13,7 +13,7 @@
     "async-lock": "^1.1.4",
     "markdown": "^0.5.0",
     "polyinterface": "^1.2.0",
-    "pgc_interface": "^1.0.2"
+    "pgc_interface": "^1.0.11"
   },
   "devDependencies": {
     "eslint": "^5.12.0",
